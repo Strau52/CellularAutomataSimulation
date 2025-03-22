@@ -133,7 +133,7 @@ namespace CAS
         {
             int totalRows = Grid.GetLength(0);
             int totalCols = Grid.GetLength(1);
-            var neighborPositions = new List<Position>();
+            List<Position> neighborPositions = new List<Position>();
             for (int deltaRow = -1; deltaRow <= 1; deltaRow++)
             {
                 for (int deltaCol = -1; deltaCol <= 1; deltaCol++)
@@ -171,7 +171,7 @@ namespace CAS
 
             if (animalType == CellState.Herbivore)
             {
-                var plantCandidates = neighbors.Where(pos => Grid[pos.Row, pos.Col].State == CellState.Plant).ToList();
+                List<Position> plantCandidates = neighbors.Where(pos => Grid[pos.Row, pos.Col].State == CellState.Plant).ToList();
                 if (plantCandidates.Any())
                 {
                     targetPosition = plantCandidates.First();
@@ -181,7 +181,7 @@ namespace CAS
             }
             else if (animalType == CellState.Carnivore)
             {
-                var preyCandidates = neighbors.Where(pos => Grid[pos.Row, pos.Col].State == CellState.Herbivore ||
+                List<Position> preyCandidates = neighbors.Where(pos => Grid[pos.Row, pos.Col].State == CellState.Herbivore ||
                                                               Grid[pos.Row, pos.Col].State == CellState.Omnivore).ToList();
                 if (preyCandidates.Any())
                 {
@@ -192,7 +192,7 @@ namespace CAS
             }
             else if (animalType == CellState.Omnivore)
             {
-                var plantCandidates = neighbors.Where(pos => Grid[pos.Row, pos.Col].State == CellState.Plant).ToList();
+                List<Position> plantCandidates = neighbors.Where(pos => Grid[pos.Row, pos.Col].State == CellState.Plant).ToList();
                 if (plantCandidates.Any())
                 {
                     targetPosition = plantCandidates.First();
@@ -201,7 +201,7 @@ namespace CAS
                 }
                 if (!hasFed && energy < SimulationConstants.HUNGER_THRESHOLD)
                 {
-                    var herbivoreCandidates = neighbors.Where(pos => Grid[pos.Row, pos.Col].State == CellState.Herbivore).ToList();
+                    List<Position> herbivoreCandidates = neighbors.Where(pos => Grid[pos.Row, pos.Col].State == CellState.Herbivore).ToList();
                     if (herbivoreCandidates.Any())
                     {
                         targetPosition = herbivoreCandidates.First();
@@ -230,7 +230,7 @@ namespace CAS
             }
             else
             {
-                var emptyPositions = neighbors.Where(pos => nextGrid[pos.Row, pos.Col].State == CellState.Empty).ToList();
+                List<Position> emptyPositions = neighbors.Where(pos => nextGrid[pos.Row, pos.Col].State == CellState.Empty).ToList();
                 if (emptyPositions.Any())
                 {
                     targetPosition = emptyPositions.First();

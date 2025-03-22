@@ -25,7 +25,7 @@ namespace CAS
                 .OrderBy(file =>
                 {
                     string name = Path.GetFileNameWithoutExtension(file);
-                    var match = Regex.Match(name, @"^\d+");
+                    Match match = Regex.Match(name, @"^\d+");
                     return (match.Success && int.TryParse(match.Value, out int number)) ? number : int.MaxValue;
                 })
                 .ThenBy(file => Path.GetFileName(file))
