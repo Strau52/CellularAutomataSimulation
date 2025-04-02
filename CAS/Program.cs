@@ -94,6 +94,9 @@ namespace CAS
                 double speedupParMed = (medSeq / (double)medPar - 1) * 100;
                 double speedupTaskMed = (medSeq / (double)medTask - 1) * 100;
 
+                double speedupTaskVsParAvg = (avgPar / avgTask - 1) * 100;
+                double speedupTaskVsParMed = (medPar / (double)medTask - 1) * 100;
+
                 int consoleWidth = Console.WindowWidth;
                 string border = new string('=', consoleWidth);
                 string title = "RESULTS";
@@ -102,16 +105,19 @@ namespace CAS
                 Console.WriteLine(border);
                 Console.WriteLine(centeredTitle);
                 Console.WriteLine(border);
-                Console.WriteLine($"The grid was {sequentialKernel.Grid.GetLength(0)}x{sequentialKernel.Grid.GetLength(1)}");
-                Console.WriteLine();
-                Console.WriteLine("Sequential Kernel:");
-                Console.WriteLine($"   Average: {avgSeq:0.##} ms, Median: {medSeq} ms");
-                Console.WriteLine();
-                Console.WriteLine("Parallel Kernel:");
-                Console.WriteLine($"   Average: {avgPar:0.##} ms, Median: {medPar} ms, Speedup vs. sequential: {speedupParAvg:0.##}% (avg), {speedupParMed:0.##}% (median)");
-                Console.WriteLine();
-                Console.WriteLine("Task-based Kernel:");
-                Console.WriteLine($"   Average: {avgTask:0.##} ms, Median: {medTask} ms, Speedup vs. sequential: {speedupTaskAvg:0.##}% (avg), {speedupTaskMed:0.##}% (median)");
+                Console.WriteLine($"The grid was {sequentialKernel.Grid.GetLength(0)}x{sequentialKernel.Grid.GetLength(1)}\n");
+                Console.WriteLine($"Number of generations: {maxGenerations}    Number of runs: {numRuns}\n");
+                Console.WriteLine($"Sequential Kernel ({maxGenerations} generation):");
+                Console.WriteLine($"\tAverage: {avgSeq:0.##} ms, Median: {medSeq} ms in {numRuns} runs \n");
+
+                Console.WriteLine($"Parallel Kernel ({maxGenerations} generation):");
+                Console.WriteLine($"\tAverage: {avgPar:0.##} ms, Median: {medPar} ms in {numRuns} runs");
+                Console.WriteLine($"\tSpeedup vs. Sequential: {speedupParAvg:0.##}% (avg), {speedupParMed:0.##}% (median)\n");
+
+                Console.WriteLine($"Task-based Kernel ({maxGenerations} generation):");
+                Console.WriteLine($"\tAverage: {avgTask:0.##} ms, Median: {medTask} ms in {numRuns} runs");
+                Console.WriteLine($"\tSpeedup vs. Sequential: {speedupTaskAvg:0.##}% (avg), {speedupTaskMed:0.##}% (median)");
+                Console.WriteLine($"\tSpeedup vs. Parallel: {speedupTaskVsParAvg:0.##}% (avg), {speedupTaskVsParMed:0.##}% (median)");
             }
             else
             {
