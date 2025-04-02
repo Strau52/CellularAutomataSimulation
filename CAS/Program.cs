@@ -77,9 +77,24 @@ namespace CAS
                 int maxGenerations = PromptPositiveInteger("Enter the maximum number of generations: ");
                 int numRuns = PromptPositiveInteger("Enter the number of runs: ");
 
-                List<long> seqTimes = MeasurePerformance(sequentialKernel, selectedFilePath, maxGenerations, numRuns);
-                List<long> parTimes = MeasurePerformance(parallelKernel, selectedFilePath, maxGenerations, numRuns);
-                List<long> taskTimes = MeasurePerformance(taskKernel, selectedFilePath, maxGenerations, numRuns);
+                Console.WriteLine("Starting benchmark for Sequential Kernel...");
+                Task<List<long>> seqTask = Task.Run(() => MeasurePerformance(sequentialKernel, selectedFilePath, maxGenerations, numRuns));
+
+                Console.WriteLine("Starting benchmark for Parallel Kernel...");
+                Task<List<long>> parTask = Task.Run(() => MeasurePerformance(parallelKernel, selectedFilePath, maxGenerations, numRuns));
+
+                Console.WriteLine("Starting benchmark for Task-based Kernel...");
+                Task<List<long>> taskTask = Task.Run(() => MeasurePerformance(taskKernel, selectedFilePath, maxGenerations, numRuns));
+
+                Task.WaitAll(seqTask, parTask, taskTask);
+
+                Console.WriteLine("Sequential kernel benchmark finished.");
+                Console.WriteLine("Parallel kernel benchmark finished.");
+                Console.WriteLine("Task-based kernel benchmark finished.");
+
+                List<long> seqTimes = seqTask.Result;
+                List<long> parTimes = parTask.Result;
+                List<long> taskTimes = taskTask.Result;
 
                 double avgSeq = seqTimes.Average();
                 double avgPar = parTimes.Average();
@@ -93,7 +108,6 @@ namespace CAS
                 double speedupTaskAvg = (avgSeq / avgTask - 1) * 100;
                 double speedupParMed = (medSeq / (double)medPar - 1) * 100;
                 double speedupTaskMed = (medSeq / (double)medTask - 1) * 100;
-
                 double speedupTaskVsParAvg = (avgPar / avgTask - 1) * 100;
                 double speedupTaskVsParMed = (medPar / (double)medTask - 1) * 100;
 
