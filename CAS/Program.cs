@@ -9,14 +9,20 @@ namespace CAS
         {
             ICellularAutomataKernel sequentialKernel = new SequentialCellularAutomataKernel();
             ICellularAutomataKernel parallelKernel = new ParallelCellularAutomataKernel();
-            ICellularAutomataKernel? selectedKernel = null;
+            ICellularAutomataKernel taskKernel = new TaskBasedCellularAutomataKernel();
+            ICellularAutomataKernel? selectedKernel = sequentialKernel;
 
             bool isBenchmarkMode = PromptBenchmarkMode();
 
             if (!isBenchmarkMode)
             {
                 string kernelChoice = PromptKernelMode();
-                selectedKernel = kernelChoice.Equals("sequential", StringComparison.OrdinalIgnoreCase) ? sequentialKernel : parallelKernel;
+                if (kernelChoice.Equals("sequential", StringComparison.OrdinalIgnoreCase))
+                    selectedKernel = sequentialKernel;
+                else if (kernelChoice.Equals("parallel", StringComparison.OrdinalIgnoreCase))
+                    selectedKernel = parallelKernel;
+                else if (kernelChoice.Equals("task", StringComparison.OrdinalIgnoreCase))
+                    selectedKernel = taskKernel;
             }
 
             string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
@@ -56,7 +62,7 @@ namespace CAS
                 {
                     sequentialKernel.LoadInitialState(selectedFilePath);
                     parallelKernel.LoadInitialState(selectedFilePath);
-                    selectedKernel = sequentialKernel;
+                    taskKernel.LoadInitialState(selectedFilePath);
                 }
             }
             catch (Exception ex)
@@ -71,16 +77,22 @@ namespace CAS
                 int maxGenerations = PromptPositiveInteger("Enter the maximum number of generations: ");
                 int numRuns = PromptPositiveInteger("Enter the number of runs: ");
 
-                List<long> sequentialRunTimes = MeasurePerformance(sequentialKernel, selectedFilePath, maxGenerations, numRuns);
-                List<long> parallelRunTimes = MeasurePerformance(parallelKernel, selectedFilePath, maxGenerations, numRuns);
+                List<long> seqTimes = MeasurePerformance(sequentialKernel, selectedFilePath, maxGenerations, numRuns);
+                List<long> parTimes = MeasurePerformance(parallelKernel, selectedFilePath, maxGenerations, numRuns);
+                List<long> taskTimes = MeasurePerformance(taskKernel, selectedFilePath, maxGenerations, numRuns);
 
-                double avgSequential = sequentialRunTimes.Average();
-                double avgParallel = parallelRunTimes.Average();
-                long medianSequential = CalculateMedian(sequentialRunTimes);
-                long medianParallel = CalculateMedian(parallelRunTimes);
+                double avgSeq = seqTimes.Average();
+                double avgPar = parTimes.Average();
+                double avgTask = taskTimes.Average();
 
-                double avgSpeedupPercent = (avgSequential / avgParallel - 1) * 100;
-                double medianSpeedupPercent = (medianSequential / (double)medianParallel - 1) * 100;
+                long medSeq = CalculateMedian(seqTimes);
+                long medPar = CalculateMedian(parTimes);
+                long medTask = CalculateMedian(taskTimes);
+
+                double speedupParAvg = (avgSeq / avgPar - 1) * 100;
+                double speedupTaskAvg = (avgSeq / avgTask - 1) * 100;
+                double speedupParMed = (medSeq / (double)medPar - 1) * 100;
+                double speedupTaskMed = (medSeq / (double)medTask - 1) * 100;
 
                 int consoleWidth = Console.WindowWidth;
                 string border = new string('=', consoleWidth);
@@ -90,13 +102,16 @@ namespace CAS
                 Console.WriteLine(border);
                 Console.WriteLine(centeredTitle);
                 Console.WriteLine(border);
-                Console.WriteLine($"The grid was {selectedKernel.Grid.GetLength(0)}x{selectedKernel.Grid.GetLength(1)}");
-                Console.WriteLine($"Average sequential solution ({maxGenerations} generations): {avgSequential:0.##} ms in {numRuns} runs");
-                Console.WriteLine($"Average parallel solution ({maxGenerations} generations): {avgParallel:0.##} ms in {numRuns} runs");
-                Console.WriteLine($"Median sequential solution: {medianSequential} ms");
-                Console.WriteLine($"Median parallel solution: {medianParallel} ms");
-                Console.WriteLine($"Average speedup: {avgSpeedupPercent:0.##} %");
-                Console.WriteLine($"Median speedup: {medianSpeedupPercent:0.##} %");
+                Console.WriteLine($"The grid was {sequentialKernel.Grid.GetLength(0)}x{sequentialKernel.Grid.GetLength(1)}");
+                Console.WriteLine();
+                Console.WriteLine("Sequential Kernel:");
+                Console.WriteLine($"   Average: {avgSeq:0.##} ms, Median: {medSeq} ms");
+                Console.WriteLine();
+                Console.WriteLine("Parallel Kernel:");
+                Console.WriteLine($"   Average: {avgPar:0.##} ms, Median: {medPar} ms, Speedup vs. sequential: {speedupParAvg:0.##}% (avg), {speedupParMed:0.##}% (median)");
+                Console.WriteLine();
+                Console.WriteLine("Task-based Kernel:");
+                Console.WriteLine($"   Average: {avgTask:0.##} ms, Median: {medTask} ms, Speedup vs. sequential: {speedupTaskAvg:0.##}% (avg), {speedupTaskMed:0.##}% (median)");
             }
             else
             {
@@ -108,17 +123,15 @@ namespace CAS
         {
             while (true)
             {
-                Console.Write("Enter S for sequential or P for parallel: ");
+                Console.Write("Enter S for sequential, P for parallel, or T for task-based: ");
                 string input = Console.ReadLine().Trim().ToLower();
                 if (input == "s" || input == "sequential")
-                {
                     return "sequential";
-                }
-                else if (input == "p" || input == "parallel")
-                {
+                if (input == "p" || input == "parallel")
                     return "parallel";
-                }
-                Console.WriteLine("Invalid input. Please enter S or P.");
+                if (input == "t" || input == "task" || input == "task-based")
+                    return "task";
+                Console.WriteLine("Invalid input. Please enter S, P, or T.");
             }
         }
 
@@ -129,17 +142,10 @@ namespace CAS
                 Console.Write("Run in benchmark mode? (T/F): ");
                 string input = Console.ReadLine().Trim().ToUpper();
                 if (input == "T" || input == "TRUE")
-                {
                     return true;
-                }
-                else if (input == "F" || input == "FALSE")
-                {
+                if (input == "F" || input == "FALSE")
                     return false;
-                }
-                else
-                {
-                    Console.WriteLine("Invalid input. Please enter T for true or F for false.");
-                }
+                Console.WriteLine("Invalid input. Please enter T or F.");
             }
         }
 
@@ -149,9 +155,7 @@ namespace CAS
             {
                 Console.Write(message);
                 if (int.TryParse(Console.ReadLine(), out int value) && value > 0)
-                {
                     return value;
-                }
                 Console.WriteLine("Invalid input. Please enter a positive integer.");
             }
         }
@@ -189,7 +193,8 @@ namespace CAS
             int generation = 0;
             while (true)
             {
-                LocalWeather[,] weatherGrid = (kernel is SequentialCellularAutomataKernel seqKernel) ? seqKernel.GetWeatherGrid() : ((ParallelCellularAutomataKernel)kernel).GetWeatherGrid();
+                LocalWeather[,] weatherGrid = (kernel is SequentialCellularAutomataKernel seqKernel) ? seqKernel.GetWeatherGrid()
+                    : ((ParallelCellularAutomataKernel)kernel).GetWeatherGrid();
                 ConsoleDisplay.Show(kernel.Grid, weatherGrid, generation);
                 generation++;
                 Thread.Sleep(500);
